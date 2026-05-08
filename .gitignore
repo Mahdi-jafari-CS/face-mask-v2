@@ -1,0 +1,36 @@
+# Model weights
+*.pt
+!models/.gitkeep
+
+# Dataset
+datasets/
+
+# Python cache
+__pycache__/
+*.pyc
+*/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+venv/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Results & plots
+results/plots/
+!results/plots/.gitkeep
+results/metrics.json
+
+# Training checkpoints
+runs/
+
+# Jupyter
+.ipynb_checkpoints/
