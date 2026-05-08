@@ -1,36 +1,36 @@
-# Model weights
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Model weights (large binary files — too big for GitHub)
 *.pt
-!models/.gitkeep
+*.torchscript
+*.pth
+*.pkl
+*.onnx
 
 # Dataset
-datasets/
+face_mask_yolo/train/labels.cache
+face_mask_yolo/val/labels.cache
+face_mask_yolo/train/images/
+face_mask_yolo/val/images/
+face_mask_yolo/train/labels/
+face_mask_yolo/val/labels/
 
-# Python cache
-__pycache__/
-*.pyc
-*/
-*.egg-info/
+# Kaggle
+kaggle.json
+face-mask-detection.zip
+
+# Training runs
+runs/
+wandb/
 
 # IDE
 .vscode/
 .idea/
-
-# Environment
-.env
-venv/
-.venv/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Results & plots
-results/plots/
-!results/plots/.gitkeep
-results/metrics.json
-
-# Training checkpoints
-runs/
-
-# Jupyter
-.ipynb_checkpoints/
+*.swp
+*.swo

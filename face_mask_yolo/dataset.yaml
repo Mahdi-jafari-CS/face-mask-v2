@@ -1,0 +1,8 @@
+names:
+- with_mask
+- without_mask
+- mask_weared_incorrect
+nc: 3
+path: /home/jafari/Desktop/CV final/face-mask-v2/face_mask_yolo
+train: train/images
+val: val/images

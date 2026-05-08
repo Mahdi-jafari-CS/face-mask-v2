@@ -1,0 +1,58 @@
+{
+  "yolov8n_v1": {
+    "label": "YOLOv8n (Baseline)",
+    "color": "#64748b",
+    "map50": 0.6962,
+    "map50_95": 0.4389,
+    "precision": 0.7138,
+    "recall": 0.6829,
+    "speed_ms": 18.0,
+    "per_class": {
+      "with_mask": 0.8948,
+      "without_mask": 0.6804,
+      "mask_weared_incorrect": 0.5133
+    }
+  },
+  "yolov8s_v2": {
+    "label": "YOLOv8s (Improved)",
+    "color": "#06b6d4",
+    "map50": 0.8852,
+    "map50_95": 0.6086,
+    "precision": 0.9409,
+    "recall": 0.8115,
+    "speed_ms": 30.3,
+    "per_class": {
+      "with_mask": 0.9678,
+      "without_mask": 0.8924,
+      "mask_weared_incorrect": 0.7954
+    }
+  },
+  "mobilenet_ssd": {
+    "label": "MobileNetV2-SSD",
+    "color": "#f59e0b",
+    "map50": 0.7287,
+    "map50_95": 0.4678,
+    "precision": 0.8381,
+    "recall": 0.6519,
+    "speed_ms": 8.1,
+    "per_class": {
+      "with_mask": 0.9033,
+      "without_mask": 0.7391,
+      "mask_weared_incorrect": 0.5438
+    }
+  },
+  "rtdetr": {
+    "label": "RT-DETR (SOTA)",
+    "color": "#a855f7",
+    "map50": 0.8274,
+    "map50_95": 0.5732,
+    "precision": 0.9139,
+    "recall": 0.7435,
+    "speed_ms": 60.0,
+    "per_class": {
+      "with_mask": 0.9629,
+      "without_mask": 0.8829,
+      "mask_weared_incorrect": 0.6364
+    }
+  }
+}
