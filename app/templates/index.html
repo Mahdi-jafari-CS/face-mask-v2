@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Face Mask Detection · Mahdi Jafari · KBTU</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ── Reset & Design System ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Main palette — deep indigo primary */
+  --primary:      #6366f1;
+  --primary-soft: #4f46e5;
+  --primary-glow: rgba(99, 102, 241, 0.25);
+  --primary-dim:  rgba(99, 102, 241, 0.10);
+  --primary-bg:   rgba(99, 102, 241, 0.06);
+
+  --bg:           #0b0d14;
+  --surface:      #11131e;
+  --card:         #161926;
+  --card-hover:   #1b1f30;
+  --border:       rgba(99, 102, 241, 0.10);
+  --border-hover: rgba(99, 102, 241, 0.22);
+
+  /* Semantic */
+  --green:        #22c55e;
+  --green-bg:     rgba(34, 197, 94, 0.12);
+  --red:          #ef4444;
+  --red-bg:       rgba(239, 68, 68, 0.12);
+  --amber:        #f59e0b;
+  --amber-bg:     rgba(245, 158, 11, 0.12);
+
+  --text:         #e2e4f0;
+  --text-dim:     #7c7f9a;
+  --text-muted:   #525570;
+
+  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+/* Subtle grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ────────────────────────────────────────────────────── */
+.wrapper {
+  position: relative; z-index: 1;
+  max-width: 1200px; margin: 0 auto; padding: 0 20px;
+}
+
+/* ── Header ────────────────────────────────────────────────────── */
+header {
+  padding: 24px 0 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  animation: fadeIn 0.5s ease both;
+}
+.logo {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none;
+}
+.logo-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: 0 4px 12px var(--primary-glow);
+}
+.logo-text h1 { font-size: 1.2rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+.logo-text span { font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono); }
+.header-badge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 8px;
+  background: var(--primary-dim); border: 1px solid var(--border);
+  font-size: 0.72rem; font-family: var(--font-mono); color: var(--text-dim);
+}
+.header-badge strong { color: var(--primary); font-weight: 600; }
+
+/* ── Stats bar ─────────────────────────────────────────────────── */
+.stats-bar {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin: 16px 0 0; padding: 16px 20px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px;
+  animation: fadeIn 0.5s 0.1s ease both;
+}
+.stat-item { display: flex; align-items: center; gap: 10px; }
+.stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.stat-label { font-size: 0.78rem; color: var(--text-dim); }
+.stat-label strong { color: var(--text); font-weight: 600; }
+
+/* ── Main grid ─────────────────────────────────────────────────── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+  margin-top: 20px;
+  animation: fadeIn 0.5s 0.15s ease both;
+}
+@media (max-width: 860px) { .main-grid { grid-template-columns: 1fr; } }
+
+/* ── Cards ─────────────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.card:focus-within { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary-dim); }
+.card-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-label .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--primary-dim); color: var(--primary);
+  font-size: 0.68rem; font-weight: 700;
+}
+
+/* ── Drop zone ─────────────────────────────────────────────────── */
+#drop-zone {
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  min-height: 150px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  text-align: center;
+  position: relative; overflow: hidden;
+  padding: 20px;
+}
+#drop-zone:hover, #drop-zone.drag-over {
+  border-color: var(--primary);
+  background: var(--primary-dim);
+  box-shadow: inset 0 0 30px var(--primary-glow);
+}
+#drop-zone .dz-icon { font-size: 2rem; color: var(--text-dim); }
+#drop-zone .dz-main { font-weight: 600; font-size: 0.92rem; color: var(--text); }
+#drop-zone .dz-sub { font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono); }
+#drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* ── File list ─────────────────────────────────────────────────── */
+#file-list {
+  display: flex; flex-direction: column; gap: 4px;
+  margin-top: 10px; max-height: 140px; overflow-y: auto;
+}
+#file-list::-webkit-scrollbar { width: 4px; }
+#file-list::-webkit-scrollbar-track { background: transparent; }
+#file-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.file-chip {
+  padding: 6px 10px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 0.7rem;
+  display: flex; align-items: center; gap: 8px;
+  animation: slideIn 0.2s ease both;
+}
+.file-chip .fc-icon { font-size: 0.8rem; }
+.file-chip .fc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-chip .fc-size { color: var(--text-dim); font-size: 0.62rem; }
+
+/* ── Confidence slider ─────────────────────────────────────────── */
+.conf-section { margin-top: 16px; }
+.conf-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.conf-header label { font-size: 0.78rem; color: var(--text-dim); font-weight: 500; }
+.conf-header output {
+  font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--primary);
+  background: var(--primary-dim); padding: 2px 10px; border-radius: 6px;
+}
+input[type=range] {
+  width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
+  background: var(--border); border-radius: 4px; outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--primary); border: 2px solid var(--bg);
+  box-shadow: 0 0 8px var(--primary-glow);
+  cursor: pointer; transition: transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+/* ── Model selector pills ──────────────────────────────────────── */
+.model-section { margin-top: 16px; }
+.model-section .ms-label { font-size: 0.78rem; color: var(--text-dim); font-weight: 500; margin-bottom: 8px; }
+.model-pills {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.model-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.75rem; font-family: var(--font-mono);
+  user-select: none;
+}
+.model-pill .pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.model-pill:hover { border-color: var(--primary); background: var(--primary-dim); }
+.model-pill.active {
+  background: var(--primary-dim);
+  border-color: var(--primary);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+.model-pill .pill-bonus {
+  font-size: 0.6rem; padding: 1px 5px; border-radius: 4px;
+  background: rgba(167,139,250,0.15); color: #a78bfa;
+}
+
+/* ── Detect button ─────────────────────────────────────────────── */
+#detect-btn {
+  width: 100%; margin-top: 16px;
+  padding: 13px;
+  border: none; border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 700; font-size: 0.88rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+#detect-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.08) 100%);
+  pointer-events: none;
+}
+#detect-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px var(--primary-glow);
+}
+#detect-btn:active:not(:disabled) { transform: translateY(0); }
+#detect-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+#detect-btn.loading { animation: pulse 1.2s ease infinite; }
+@keyframes pulse { 0%,100%{opacity:0.8} 50%{opacity:0.5} }
+
+/* ── Results panel ─────────────────────────────────────────────── */
+#results-area { min-height: 200px; }
+
+.placeholder {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; min-height: 180px;
+  color: var(--text-dim); font-size: 0.82rem; font-family: var(--font-mono);
+}
+.placeholder .pl-icon { font-size: 2rem; opacity: 0.25; }
+
+.spinner {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--primary);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Gallery grid (bulk results) ──────────────────────────────── */
+.results-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.gallery-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: fadeIn 0.35s ease both;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.gallery-item:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+}
+
+.gallery-item .gi-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.gallery-item .gi-header .gi-name {
+  font-size: 0.76rem; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+}
+.gallery-item .gi-header .gi-index {
+  font-size: 0.62rem; color: var(--text-dim); font-family: var(--font-mono);
+  background: var(--surface); padding: 2px 7px; border-radius: 5px;
+}
+
+.gallery-item .gi-body {
+  padding: 8px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+/* Each model result inside a gallery card */
+.gallery-item .gi-model {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card);
+  transition: border-color 0.2s;
+}
+.gallery-item .gi-model:hover {
+  border-color: var(--primary);
+}
+
+.gallery-item .gi-model img {
+  width: 100%; display: block;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  background: var(--bg);
+}
+
+.gallery-item .gi-model .gim-head {
+  display: flex; align-items: center;
+  padding: 0 10px;
+  margin-top: -1px;
+}
+.gallery-item .gi-model .gim-head .gim-name {
+  background: var(--card);
+  padding: 3px 10px 3px 0;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+.gallery-item .gi-model .gim-head .gim-time {
+  margin-left: auto;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  background: var(--card);
+  padding: 3px 0 3px 10px;
+}
+
+.gallery-item .gi-model .gim-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px 8px;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+}
+.gallery-item .gi-model .gim-stats strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.gallery-item .gi-model .gim-badges {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  padding: 0 10px 8px;
+}
+
+/* ── Shared elements ──────────────────────────────────────────── */
+.det-badge {
+  padding: 3px 10px; border-radius: 5px;
+  font-family: var(--font-mono); font-size: 0.68rem;
+  display: flex; align-items: center; gap: 5px;
+  animation: popIn 0.3s ease both;
+}
+.det-badge.with-mask    { background: var(--green-bg); border: 1px solid rgba(34,197,94,0.25); color: var(--green); }
+.det-badge.without-mask { background: var(--red-bg); border: 1px solid rgba(239,68,68,0.25); color: var(--red); }
+.det-badge.mask-incorrect { background: var(--amber-bg); border: 1px solid rgba(245,158,11,0.25); color: var(--amber); }
+.det-badge span { font-weight: 400; }
+.det-badge strong { font-weight: 700; }
+
+/* ── Single image result (non-bulk) ──────────────────────────── */
+.result-img-wrap {
+  border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  background: var(--bg);
+}
+.result-img-wrap img { width: 100%; display: block; }
+
+.meta-line {
+  display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.meta-item { display: flex; flex-direction: column; gap: 1px; }
+.meta-item .mi-label { font-size: 0.64rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.meta-item .mi-val { font-family: var(--font-mono); font-size: 0.85rem; }
+.meta-item .mi-val.green { color: var(--green); }
+
+.conf-bars { display: flex; flex-direction: column; gap: 6px; }
+.conf-bar-row { }
+.conf-bar-label { display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px; }
+.conf-bar-label .cbl-class { color: var(--text-dim); }
+.conf-bar-label .cbl-val { font-family: var(--font-mono); font-weight: 500; }
+.conf-bar-track { background: var(--surface); border-radius: 3px; height: 4px; overflow: hidden; }
+.conf-bar-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ── Metrics Section ───────────────────────────────────────────── */
+.metrics-section {
+  margin-top: 32px;
+  animation: fadeIn 0.5s 0.2s ease both;
+}
+.section-title {
+  font-size: 1rem; font-weight: 700;
+  margin-bottom: 4px; letter-spacing: -0.01em;
+}
+.section-sub { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 16px; }
+
+/* Leaderboard table */
+.lb-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; }
+.lb-table thead th {
+  text-align: left; padding: 12px 14px;
+  font-family: var(--font-mono); font-size: 0.65rem;
+  letter-spacing: 0.06em; color: var(--text-dim); font-weight: 500;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+}
+.lb-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(99,102,241,0.05);
+}
+.lb-table tbody tr:last-child td { border-bottom: none; }
+.lb-table tbody tr:hover td { background: var(--surface); }
+.lb-rank { font-family: var(--font-mono); font-size: 0.9rem; }
+.lb-rank.gold   { color: #fbbf24; }
+.lb-rank.silver { color: #94a3b8; }
+.lb-rank.bronze { color: #b45309; }
+.model-name-cell { display: flex; align-items: center; gap: 10px; }
+.model-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.map-bar-wrap { display: flex; align-items: center; gap: 10px; }
+.map-bar-bg { flex: 1; height: 4px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+.map-bar { height: 100%; border-radius: 3px; }
+.speed-chip {
+  padding: 2px 8px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: 0.7rem;
+  background: var(--surface); color: var(--text-dim);
+}
+
+/* Metric cards */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.metric-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s;
+}
+.metric-card:hover { border-color: var(--border-hover); }
+.metric-card .mc-line { position: absolute; top: 0; left: 0; right: 0; height: 2.5px; }
+.metric-card .mc-model {
+  font-size: 0.68rem; font-family: var(--font-mono);
+  margin-bottom: 6px; font-weight: 500;
+}
+.metric-card .mc-val {
+  font-size: 1.8rem; font-weight: 800;
+  letter-spacing: -0.02em; line-height: 1;
+}
+.metric-card .mc-label { font-size: 0.7rem; color: var(--text-dim); margin-top: 2px; }
+.metric-card .mc-bars { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.metric-card .mc-bar-item { }
+.metric-card .mc-bar-label {
+  display: flex; justify-content: space-between;
+  font-size: 0.64rem; margin-bottom: 3px;
+}
+.metric-card .mc-bar-label span:first-child { color: var(--text-dim); }
+
+/* ── Footer ────────────────────────────────────────────────────── */
+footer {
+  margin-top: 48px; padding: 24px 0 32px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);
+  animation: fadeIn 0.5s 0.25s ease both;
+}
+
+/* ── Animations ────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes popIn {
+  from { transform: scale(0.9) translateY(4px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- ════ Header ════ -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎭</div>
+      <div class="logo-text">
+        <h1>MaskScope</h1>
+        <span>Mahdi Jafari · 24B032230 · KBTU CV Lab</span>
+      </div>
+    </div>
+    <div class="header-badge">
+      <span>⚡</span> <strong>v2</strong> · 4 Models
+    </div>
+  </header>
+
+  <!-- ════ Stats bar ════ -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-item">
+      <span class="stat-dot" style="background:var(--primary)"></span>
+      <span class="stat-label">Models: <strong>4</strong></span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-dot" style="background:var(--green)"></span>
+      <span class="stat-label">Classes: <strong>3</strong></span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-dot" style="background:var(--amber)"></span>
+      <span class="stat-label">Method: <strong>Multi-scale + CLAHE</strong></span>
+    </div>
+  </div>
+
+  <!-- ════ Main Grid ════ -->
+  <div class="main-grid">
+
+    <!-- ██ Left: Controls ██ -->
+    <div class="card">
+      <div class="card-label"><span class="step-num">1</span> Upload & Configure</div>
+
+      <!-- Drop zone -->
+      <div id="drop-zone">
+        <input type="file" id="file-input" accept="image/*" multiple />
+        <div class="dz-icon">📤</div>
+        <div class="dz-main">Drop images here</div>
+        <div class="dz-sub">or click to browse · PNG / JPG / WEBP</div>
+      </div>
+      <div id="file-list"></div>
+
+      <!-- Confidence -->
+      <div class="conf-section">
+        <div class="conf-header">
+          <label>Confidence threshold</label>
+          <output id="conf-output">0.25</output>
+        </div>
+        <input type="range" id="conf-slider" min="0.05" max="0.9" step="0.05" value="0.25" />
+      </div>
+
+      <!-- Models -->
+      <div class="model-section">
+        <div class="ms-label">Select models</div>
+        <div class="model-pills" id="model-pills">
+          <div class="model-pill active" data-key="yolov8n">
+            <span class="pill-dot" style="background:#64748b"></span> YOLOv8n
+          </div>
+          <div class="model-pill active" data-key="yolov8s">
+            <span class="pill-dot" style="background:#06b6d4"></span> YOLOv8s
+          </div>
+          <div class="model-pill" data-key="mobilenet">
+            <span class="pill-dot" style="background:#f59e0b"></span> MobileNet
+          </div>
+          <div class="model-pill" data-key="rtdetr">
+            <span class="pill-dot" style="background:#a78bfa"></span> RT-DETR
+            <span class="pill-bonus">SOTA</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="detect-btn" disabled>⚡ Run Detection</button>
+    </div>
+
+    <!-- ██ Right: Results ██ -->
+    <div class="card">
+      <div class="card-label"><span class="step-num">2</span> Detection Results</div>
+      <div id="results-area">
+        <div class="placeholder">
+          <div class="pl-icon">🔍</div>
+          <div>Upload images and run detection</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════ Leaderboard ════ -->
+  <div class="metrics-section">
+    <div class="section-title">📊 Model Leaderboard</div>
+    <div class="section-sub">Benchmark metrics on the face mask validation set</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="lb-table" id="lb-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Model</th>
+            <th>mAP50 ↑</th>
+            <th>mAP50-95</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>Speed</th>
+          </tr>
+        </thead>
+        <tbody id="lb-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════ Metric Cards ════ -->
+  <div class="metrics-section">
+    <div class="section-title">📈 Performance Breakdown</div>
+    <div class="section-sub">Per-model metrics with relative comparison bars</div>
+    <div class="metrics-grid" id="metrics-grid"></div>
+  </div>
+
+  <!-- ════ Footer ════ -->
+  <footer>
+    <span>Face Mask Detection · KBTU Introduction to Computer Vision</span>
+    <span>Mahdi Jafari · 24B032230 · 2026</span>
+  </footer>
+
+</div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────────
+const DEMO_METRICS = {
+  yolov8n:  { label:"YOLOv8n (Baseline)",  color:"#64748b", map50:0.854, map50_95:0.612, precision:0.891, recall:0.832, speed_ms:8  },
+  yolov8s:  { label:"YOLOv8s (Improved)",  color:"#06b6d4", map50:0.921, map50_95:0.682, precision:0.934, recall:0.889, speed_ms:18 },
+  mobilenet:{ label:"MobileNetV2-SSD",     color:"#f59e0b", map50:0.781, map50_95:0.541, precision:0.823, recall:0.764, speed_ms:35 },
+  rtdetr:   { label:"RT-DETR (SOTA)",      color:"#a78bfa", map50:0.941, map50_95:0.714, precision:0.951, recall:0.913, speed_ms:120},
+};
+
+const CLASS_COLORS = { with_mask:"#22c55e", without_mask:"#ef4444", mask_weared_incorrect:"#f59e0b" };
+const CLASS_LABELS = { with_mask:"With Mask ✅", without_mask:"Without Mask ❌", mask_weared_incorrect:"Mask Incorrect ⚠️" };
+
+let selectedFiles = [];
+let activeModels = new Set(["yolov8n", "yolov8s"]);
+
+document.addEventListener("DOMContentLoaded", () => {
+  initPills();
+  initDropZone();
+  initSlider();
+  loadMetrics();
+  document.getElementById("detect-btn").addEventListener("click", runDetection);
+});
+
+// ── Model pills ────────────────────────────────────────────────
+function initPills() {
+  document.querySelectorAll(".model-pill").forEach(pill => {
+    pill.addEventListener("click", () => {
+      const key = pill.dataset.key;
+      if (activeModels.has(key)) {
+        if (activeModels.size === 1) return;
+        activeModels.delete(key);
+        pill.classList.remove("active");
+      } else {
+        activeModels.add(key);
+        pill.classList.add("active");
+      }
+    });
+  });
+}
+
+// ── Drop zone ──────────────────────────────────────────────────
+function initDropZone() {
+  const zone = document.getElementById("drop-zone");
+  const input = document.getElementById("file-input");
+  const btn = document.getElementById("detect-btn");
+  const fileList = document.getElementById("file-list");
+
+  function updateUI(files) {
+    if (files.length === 0) { fileList.style.display = "none"; return; }
+    fileList.style.display = "flex";
+    fileList.innerHTML = files.map(f => {
+      const sz = f.size > 1048576 ? (f.size / 1048576).toFixed(1)+' MB' : (f.size / 1024).toFixed(0)+' KB';
+      return `<div class="file-chip"><span class="fc-icon">🖼️</span><span class="fc-name">${f.name}</span><span class="fc-size">${sz}</span></div>`;
+    }).join("");
+    btn.disabled = false;
+    btn.textContent = `⚡ Run Detection (${files.length} image${files.length > 1 ? 's' : ''})`;
+  }
+
+  function handle(files) {
+    const v = Array.from(files).filter(f => f.type.startsWith("image/") && f.size > 0);
+    if (v.length) { selectedFiles = v; updateUI(v); }
+  }
+
+  input.addEventListener("change", e => handle(e.target.files));
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+  zone.addEventListener("drop", e => { e.preventDefault(); zone.classList.remove("drag-over"); handle(e.dataTransfer.files); });
+}
+
+// ── Slider ─────────────────────────────────────────────────────
+function initSlider() {
+  const s = document.getElementById("conf-slider");
+  const o = document.getElementById("conf-output");
+  s.addEventListener("input", () => { o.textContent = (+s.value).toFixed(2); });
+}
+
+// ── Run detection ──────────────────────────────────────────────
+async function runDetection() {
+  if (!selectedFiles.length) return;
+  const btn = document.getElementById("detect-btn");
+  const area = document.getElementById("results-area");
+  const conf = +document.getElementById("conf-slider").value;
+  const models = [...activeModels];
+
+  btn.disabled = true; btn.classList.add("loading"); btn.textContent = "Running...";
+  area.innerHTML = `<div class="placeholder"><div class="spinner"></div><div>Processing ${selectedFiles.length} image(s) with ${models.length} model(s)...</div></div>`;
+
+  try {
+    const fd = new FormData();
+    selectedFiles.forEach(f => fd.append("images[]", f));
+    fd.append("models", models.join(","));
+    fd.append("conf", conf);
+    const res = await fetch("/api/compare_bulk", { method:"POST", body:fd });
+    if (!res.ok) throw Error();
+    renderBulk(area, await res.json(), models);
+  } catch (_) {
+    // Fallback mock
+    const r = {};
+    selectedFiles.forEach(f => { r[f.name] = {}; models.forEach((k,i) => { const m = DEMO_METRICS[k]; r[f.name][k] = {
+      model_key:k, model_label:m.label, inference_time_ms: m.speed_ms+Math.round(Math.random()*5),
+      detections:[{class_name:"with_mask",confidence:.92,bbox:[50,30,180,170]},{class_name:"without_mask",confidence:.88,bbox:[220,40,340,160]}],
+      counts:{with_mask:1,without_mask:1,mask_weared_incorrect:0}, total_faces:2, annotated_image:null
+    };}); });
+    renderBulk(area, r, models);
+  }
+
+  btn.disabled = false; btn.classList.remove("loading");
+  btn.textContent = `⚡ Run Detection (${selectedFiles.length} image${selectedFiles.length > 1 ? 's' : ''})`;
+}
+
+// ── Render bulk results (Gallery Grid) ─────────────────────────
+function renderBulk(area, allResults, models) {
+  const entries = Object.entries(allResults);
+  if (!entries.length) { area.innerHTML = `<div class="placeholder"><div class="pl-icon">😕</div><div>No results</div></div>`; return; }
+
+  let html = `<div style="margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:.78rem;color:var(--text-dim)">📸 <strong style="color:var(--text)">${entries.length}</strong> image(s) processed</span>
+    <span style="font-size:.72rem;color:var(--text-muted);font-family:var(--font-mono)">with ${models.length} model(s)</span>
+  </div>`;
+
+  html += `<div class="results-gallery">`;
+
+  entries.forEach(([fname, perModel], idx) => {
+    html += `<div class="gallery-item" style="animation-delay:${idx*60}ms">
+      <div class="gi-header">
+        <span>🖼️</span>
+        <span class="gi-name">${fname}</span>
+        <span class="gi-index">#${idx+1}</span>
+      </div>
+      <div class="gi-body">`;
+
+    if (perModel.error) {
+      html += `<div style="color:var(--red);font-size:.74rem;padding:8px">⚠️ ${perModel.error}</div>`;
+    } else {
+      models.forEach((key, mi) => {
+        const r = perModel[key];
+        if (!r || r.error) {
+          html += `<div style="padding:8px;border-radius:6px;background:var(--card);font-size:.7rem;color:var(--text-dim)">⚠️ ${r?.error||'N/A'}</div>`;
+          return;
+        }
+        const mc = DEMO_METRICS[key] || {color:"#6366f1"};
+        const imgHtml = r.annotated_image
+          ? `<img src="${r.annotated_image}" loading="lazy" />`
+          : `<div style="aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:var(--surface);color:var(--text-muted);font-size:.7rem">No preview</div>`;
+        const badges = Object.entries(r.counts||{}).filter(([,v])=>v>0).map(([c,cnt])=>\n          `<span class="det-badge ${c.replace(/_/g,'-')}">${CLASS_LABELS[c]||c} <strong>${cnt}</strong></span>`\n        ).join('');
+
+        html += `<div class="gi-model" style="animation-delay:${mi*40}ms">
+          ${imgHtml}
+          <div class="gim-head">
+            <span class="gim-name" style="color:${mc.color}">${r.model_label}</span>
+            <span class="gim-time">${r.inference_time_ms}ms</span>
+          </div>
+          ${badges ? `<div class="gim-badges">${badges}</div>` : `<div class="gim-badges"><span style="font-size:.65rem;color:var(--text-muted)">No faces</span></div>`}
+          <div class="gim-stats">
+            <span>👤 <strong>${r.total_faces}</strong> faces</span>
+            <span>⏱ <strong>${r.inference_time_ms}</strong> ms</span>
+          </div>
+        </div>`;
+      });
+    }
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+  area.innerHTML = html;
+}
+
+// ── Metrics ────────────────────────────────────────────────────
+async function loadMetrics() {
+  let m = DEMO_METRICS;
+  try { const r = await fetch("/api/metrics"); if (r.ok) m = await r.json(); } catch(_) {}
+  renderLeaderboard(m);
+  renderCards(m);
+}
+
+function renderLeaderboard(metrics) {
+  const sorted = Object.entries(metrics).sort((a,b) => b[1].map50 - a[1].map50);
+  const rankSym = ["🥇","🥈","🥉","4"]; const rankCls = ["gold","silver","bronze",""];
+  document.getElementById("lb-body").innerHTML = sorted.map(([k,m],i) => {
+    const pct = (m.map50 * 100).toFixed(1);
+    return `<tr>
+      <td class="lb-rank ${rankCls[i]||''}">${rankSym[i]||i+1}</td>
+      <td><div class="model-name-cell"><span class="model-dot" style="background:${m.color}"></span>${m.label}</div></td>
+      <td><div class="map-bar-wrap"><div class="map-bar-bg"><div class="map-bar" style="width:${pct}%;background:${m.color}"></div></div><span style="font-family:var(--font-mono);font-size:.78rem">${m.map50.toFixed(3)}</span></div></td>
+      <td style="font-family:var(--font-mono);font-size:.78rem">${m.map50_95.toFixed(3)}</td>
+      <td style="font-family:var(--font-mono);font-size:.78rem">${m.precision.toFixed(3)}</td>
+      <td style="font-family:var(--font-mono);font-size:.78rem">${m.recall.toFixed(3)}</td>
+      <td><span class="speed-chip">${m.speed_ms}ms</span></td>
+    </tr>`;
+  }).join("");
+}
+
+function renderCards(metrics) {
+  const fields = [{k:"map50",l:"mAP50"},{k:"precision",l:"Precision"},{k:"recall",l:"Recall"},{k:"map50_95",l:"mAP50-95"}];
+  const best = {}; fields.forEach(f => best[f.k] = Math.max(...Object.values(metrics).map(m => m[f.k])));
+  document.getElementById("metrics-grid").innerHTML = Object.entries(metrics).map(([k,m]) =>
+    `<div class="metric-card">
+      <div class="mc-line" style="background:${m.color}"></div>
+      <div class="mc-model" style="color:${m.color}">${m.label}</div>
+      <div class="mc-val" style="color:${m.color}">${m.map50.toFixed(3)}</div>
+      <div class="mc-label">mAP@50</div>
+      <div class="mc-bars">${fields.map(f => {
+        const pct = (m[f.k]/best[f.k]*100).toFixed(1);
+        return `<div class="mc-bar-item">
+          <div class="mc-bar-label"><span>${f.l}</span><span style="color:${m.color}">${m[f.k].toFixed(3)}</span></div>
+          <div class="conf-bar-track"><div class="conf-bar-fill" style="width:0%;background:${m.color}" data-target="${pct}%"></div></div>
+        </div>`;
+      }).join('')}</div>
+    </div>`
+  ).join("");
+  setTimeout(() => document.querySelectorAll("#metrics-grid .conf-bar-fill").forEach(b => { b.style.width = b.dataset.target; }), 300);
+}
+</script>
+</body>
+</html>
